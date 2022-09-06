@@ -170,12 +170,14 @@ class CrossAttention(nn.Module):
     def forward(self, x, context=None, mask=None):
         h = self.heads
 
-        q = self.to_q(x)
+        q_in = self.to_q(x)
         context = default(context, x)
-        k = self.to_k(context)
-        v = self.to_v(context)
+        k_in = self.to_k(context)
+        v_in = self.to_v(context)
+        del context, x
 
-        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q, k, v))
+        q, k, v = map(lambda t: rearrange(t, 'b n (h d) -> (b h) n d', h=h), (q_in, k_in, v_in))
+        del q_in, k_in, v_in
 
         sim = einsum('b i d, b j d -> b i j', q, k) * self.scale
 
@@ -213,7 +215,6 @@ class BasicTransformerBlock(nn.Module):
         x = self.attn2(self.norm2(x), context=context) + x
         x = self.ff(self.norm3(x)) + x
         return x
-
 
 class SpatialTransformer(nn.Module):
     """
